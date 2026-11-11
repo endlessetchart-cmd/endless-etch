@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Endless Etch Archive</title>
+<meta name="description" content="Every finished Endless Etch sketch, by month and day.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='5' width='28' height='22' rx='4' fill='%23c6c7c1'/%3E%3Cpath d='M8 21 L12 12 L16 18 L20 10 L24 21' fill='none' stroke='%233d3e3b' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <a class="mark" href="./">Endless Etch</a>
+    <nav aria-label="Pages"><a href="./">Live</a><a href="archive.html" aria-current="page">Archive</a></nav>
+  </header>
+
+  <section aria-labelledby="calhead" style="display:grid;gap:12px">
+    <div class="top"><span class="label" id="calhead">Archive by month</span><span class="label" id="total"></span></div>
+    <div class="months" id="months"><div class="empty">Loading the archive…</div></div>
+  </section>
+
+  <section class="day" id="day" aria-live="polite" hidden>
+    <header>
+      <div style="display:grid;gap:2px;min-width:0">
+        <h1 id="dayname"></h1>
+        <span class="meta" id="daymeta"></span>
+      </div>
+      <div class="pager"><button type="button" id="prev">← Earlier day</button><button type="button" id="next">Later day →</button></div>
+    </header>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<div class="lightbox" id="lb" hidden>
+  <div class="box">
+    <img id="lbimg" alt="">
+    <div class="row"><span id="lbcap"></span><span>Right-click or press and hold the image to save it</span><button id="lbclose" type="button">Close</button></div>
+  </div>
+</div>
+
+<script src="etch-core.js"></script>
+<script src="etch-engine.js"></script>
+<script src="etch-site.js"></script>
+<script>
+// ---- Archive: finished sketches grouped by Pacific-time day, shown as month calendars ----
+var MANIFEST=null,DAYS=[],LAST=-1,current=null;
+var dayFmt=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
+function dayOf(k){return dayFmt.format(kDate(k));}
+function longDay(key){var p=key.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).toLocaleDateString('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric',year:'numeric'});}
+
+// Group the archive's sketch numbers [a0, last] into Pacific-time days: [{key:'YYYY-MM-DD', ks:[k...]}], oldest first.
+// Ranges listed in batches.json "skip" (repeats from the 5-minute era) are left out.
+function hidden(k){var sk=MANIFEST.skip||[];for(var i=0;i<sk.length;i++)if(k>=sk[i][0]&&k<=sk[i][1])return true;return false;}
+function buildDays(a0,last){var out=[],cur=null;
+  for(var k=a0;k<=last;k++){if(hidden(k))continue;var d=dayOf(k);if(!cur||cur.key!==d){cur={key:d,ks:[]};out.push(cur);}cur.ks.push(k);}
+  return out;}
+
+function renderMonths(){var box=$('months');box.innerHTML='';
+  if(!DAYS.length){box.innerHTML='<div class="empty">The first sketch appears here five minutes after it starts on the live screen.</div>';return;}
+  var byMonth={},order=[];DAYS.forEach(function(d){var m=d.key.slice(0,7);if(!byMonth[m]){byMonth[m]={};order.push(m);}byMonth[m][+d.key.slice(8)]=d;});
+  order.reverse().forEach(function(m){var y=+m.slice(0,4),mo=+m.slice(5,7),first=new Date(Date.UTC(y,mo-1,1)).getUTCDay(),n=new Date(Date.UTC(y,mo,0)).getUTCDate();
+    var sec=document.createElement('div');sec.className='month';
+    var name=new Date(Date.UTC(y,mo-1,1)).toLocaleDateString('en-US',{timeZone:'UTC',month:'long',year:'numeric'});
+    var h='<h2>'+name+'</h2><div class="cal" role="grid" aria-label="'+name+'">';['S','M','T','W','T','F','S'].forEach(function(w){h+='<span class="wd" aria-hidden="true">'+w+'</span>';});
+    for(var b=0;b<first;b++)h+='<span></span>';
+    for(var dd=1;dd<=n;dd++){var d=byMonth[m][dd];
+      if(d){var c=d.ks.length;h+='<a class="d" href="#'+d.key+'"'+(current===d.key?' aria-current="date"':'')+' aria-label="'+longDay(d.key)+', '+c+' sketches">'+dd+'<small>'+c+'</small></a>';}
+      else h+='<span class="d">'+dd+'</span>';}
+    sec.innerHTML=h+'</div>';box.appendChild(sec);});
+  var total=DAYS.reduce(function(n,d){return n+d.ks.length;},0);$('total').textContent=total.toLocaleString('en-US')+(total===1?' sketch':' sketches');}
+
+var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){io.unobserve(en.target);fill(en.target);}});},{rootMargin:'400px'}):null;
+function fill(el){var k=+el.dataset.k;Redraw.request(k,function(r){if(!r)return;var b=el.querySelector('button');paintSketch(el.querySelector('canvas'),r,330,220,false);b.classList.remove('wait');
+  b.setAttribute('aria-label','Open sketch '+tag(k)+', '+r.title);el.querySelector('b').textContent=r.title;el.querySelector('.sub').textContent=tag(k)+' · '+r.name;});}
+function makeTile(k){var f=document.createElement('figure');f.className='tile';f.dataset.k=k;
+  f.innerHTML='<button type="button" class="wait" aria-label="Open sketch '+tag(k)+'"><canvas width="330" height="220"></canvas></button><figcaption><b>&nbsp;</b><span class="sub">'+tag(k)+'</span><span>'+fmtTime(k)+' PT</span></figcaption>';
+  f.querySelector('button').onclick=function(){openLightbox(k);};
+  if(Redraw.get(k)||!io)fill(f);else io.observe(f);return f;}
+
+function dayIndex(key){for(var i=0;i<DAYS.length;i++)if(DAYS[i].key===key)return i;return -1;}
+function showDay(key){var i=dayIndex(key);if(i<0)i=DAYS.length-1;if(i<0){$('day').hidden=true;return;}
+  var d=DAYS[i],same=current===d.key,grid=$('grid');current=d.key;$('day').hidden=false;
+  $('dayname').textContent=longDay(d.key);var c=d.ks.length,first=d.ks[0],lastk=d.ks[c-1];
+  $('daymeta').textContent=c+(c===1?' sketch':' sketches')+' · '+fmtTime(first)+' to '+fmtTime(lastk)+' PT'+(i===DAYS.length-1&&dayOf(nowK())===d.key?' · still drawing today':'');
+  $('prev').disabled=i===0;$('next').disabled=i===DAYS.length-1;
+  if(same&&grid.firstChild){var top=+grid.firstChild.dataset.k;d.ks.forEach(function(k){if(k>top)grid.insertBefore(makeTile(k),grid.firstChild);});}
+  else{grid.innerHTML='';for(var i2=c-1;i2>=0;i2--)grid.appendChild(makeTile(d.ks[i2]));}
+  document.querySelectorAll('.cal a.d').forEach(function(a){if(a.getAttribute('href')==='#'+d.key)a.setAttribute('aria-current','date');else a.removeAttribute('aria-current');});}
+
+function refresh(){var last=nowK()-1;if(last===LAST)return;LAST=last;DAYS=buildDays(MANIFEST.archiveStart,LAST);
+  var want=(location.hash||'').slice(1);if(!want||dayIndex(want)<0)want=DAYS.length?DAYS[DAYS.length-1].key:null;
+  showDay(current&&dayIndex(current)>=0?current:want);renderMonths();}
+$('prev').onclick=function(){var i=dayIndex(current);if(i>0)location.hash=DAYS[i-1].key;};
+$('next').onclick=function(){var i=dayIndex(current);if(i<DAYS.length-1)location.hash=DAYS[i+1].key;};
+window.addEventListener('hashchange',function(){var k=location.hash.slice(1);if(dayIndex(k)>=0){showDay(k);window.scrollTo({top:$('day').offsetTop-12,behavior:'smooth'});}});
+wireLightbox();
+loadManifest().then(function(m){MANIFEST=m;Redraw.setManifest(m);var h=location.hash.slice(1);if(/^\d{4}-\d{2}-\d{2}$/.test(h))current=h;refresh();setInterval(refresh,20000);},
+  function(){$('months').innerHTML='<div class="empty">Could not load the archive. Reload the page to try again.</div>';});
+</script>
+</body>
+</html>

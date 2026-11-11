@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Endless Etch</title>
+<meta name="description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every 20 minutes.">
+<meta property="og:title" content="Endless Etch">
+<meta property="og:description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every 20 minutes.">
+<meta property="og:url" content="https://endlessetch.art/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='5' width='28' height='22' rx='4' fill='%23c6c7c1'/%3E%3Cpath d='M8 21 L12 12 L16 18 L20 10 L24 21' fill='none' stroke='%233d3e3b' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@1,500&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <a class="mark" href="./">Endless Etch</a>
+    <nav aria-label="Pages"><a href="./" aria-current="page">Live</a><a href="archive.html">Archive</a></nav>
+  </header>
+
+  <div class="screen" id="screen" role="img" aria-label="Etch A Sketch style screen drawing a picture with one continuous line">
+    <canvas id="bg" width="1200" height="800"></canvas>
+    <canvas id="ink" width="1200" height="800"></canvas>
+    <canvas id="tip" width="1200" height="800"></canvas>
+    <div class="placard" id="placard" aria-live="polite"><span class="t" id="ptitle"></span><span class="m" id="pmeta"></span></div>
+    <div class="flash" id="flash"></div>
+  </div>
+
+  <div class="status" aria-live="polite">
+    <div class="left"><strong id="sk">Endless Etch</strong><span id="st">Loading…</span></div>
+    <span id="live">Live</span>
+  </div>
+</main>
+
+<script src="etch-core.js"></script>
+<script src="etch-engine.js"></script>
+<script src="etch-site.js"></script>
+<script>
+// ---- Live screen: every viewer works out the same sketch and progress from the clock ----
+var CW=1200,CH=800,SC=CW/GW,HOME=ETCH.HOME,MANIFEST=null;
+var bgx=$('bg').getContext('2d'),ink=$('ink').getContext('2d'),tip=$('tip').getContext('2d'),screenEl=$('screen'),flashEl=$('flash');
+bgx.drawImage(makePowder(CW,CH),0,0);
+function penStyle(){ink.globalCompositeOperation='source-over';ink.globalAlpha=1;ink.lineWidth=2.8;ink.lineCap='round';ink.lineJoin='round';ink.strokeStyle='#3d3e3b';}
+penStyle();
+
+var cache={};
+function liveSlot(k){if(cache[k])return Promise.resolve(cache[k]);var e=etchEntryFor(MANIFEST,k);
+  return loadBatch(e.file).then(function(B){if(cache[k])return cache[k];var s=etchSlot(B,e.startK,k),cum=new Float64Array(s.moves.length),t=0,x=HOME[0],y=HOME[1];
+    for(var i=0;i<s.moves.length;i++){var m=s.moves[i];t+=Math.max(Math.abs(m.x-x),Math.abs(m.y-y))/(ETCH.V*m.m);x=m.x;y=m.y;cum[i]=t;}
+    var budget=etchSlotSeconds(k)-ETCH.HOLD-ETCH.PREWIPE-ETCH.ERASE-ETCH.REST-0.5,speed=Math.max(0.4,t/budget);for(var j=0;j<cum.length;j++)cum[j]/=speed;
+    cache[k]={k:k,subj:s.subj,title:s.title,batch:B.number,moves:s.moves,cum:cum,dur:t/speed,len:etchSlotSeconds(k)};for(var key in cache)if(+key<k-1)delete cache[key];return cache[k];});}
+
+var slot=null,loading=-1;
+function useSlot(s){slot={k:s.k,subj:s.subj,title:s.title,moves:s.moves,cum:s.cum,dur:s.dur,len:s.len,mi:0,pos:{x:HOME[0],y:HOME[1]},flashed:false,shook:false,pre:false};
+  ink.clearRect(0,0,CW,CH);penStyle();$('placard').classList.remove('on');$('ptitle').textContent=s.title;$('pmeta').textContent=tag(s.k)+' · '+s.subj.name;
+  $('sk').textContent='Sketch '+tag(s.k);}
+
+function advanceTo(t){var s=slot,td=Math.min(t,s.dur);
+  ink.beginPath();ink.moveTo(s.pos.x*SC,s.pos.y*SC);var moved=false;
+  while(s.mi<s.moves.length&&s.cum[s.mi]<=td){var m=s.moves[s.mi];s.pos.x=m.x;s.pos.y=m.y;ink.lineTo(m.x*SC,m.y*SC);s.mi++;moved=true;}
+  if(s.mi<s.moves.length){var mm=s.moves[s.mi],t0=s.mi?s.cum[s.mi-1]:0,t1=s.cum[s.mi];
+    var f=t1>t0?Math.max(0,Math.min(1,(td-t0)/(t1-t0))):1,px=s.mi?s.moves[s.mi-1].x:HOME[0],py=s.mi?s.moves[s.mi-1].y:HOME[1];
+    var nx=px+(mm.x-px)*f,ny=py+(mm.y-py)*f;if(nx!==s.pos.x||ny!==s.pos.y){s.pos.x=nx;s.pos.y=ny;ink.lineTo(nx*SC,ny*SC);moved=true;}}
+  if(moved)ink.stroke();}
+
+function drawTip(p){tip.clearRect(0,0,CW,CH);tip.fillStyle='#262724';tip.beginPath();tip.arc(p.x*SC,p.y*SC,3.2,0,TAU);tip.fill();}
+var lastFrame=performance.now(),status='';
+function setStatus(h){if(h!==status){status=h;$('st').innerHTML=h;}}
+function loop(now){
+  var dt=Math.min(0.05,(now-lastFrame)/1000);lastFrame=now;
+  var nowMs=Date.now(),k=etchKAt(nowMs),t=(nowMs-etchStartMs(k))/1000;
+  if((!slot||slot.k!==k)&&loading!==k){loading=k;screenEl.classList.remove('shake');
+    liveSlot(k).then(function(s){if(nowK()===s.k)useSlot(s);loading=-1;},function(){loading=-1;setStatus('Could not load this sketch. Reload the page to try again.');});}
+  if(slot&&slot.k===k){var s=slot,wipeAt=s.len-ETCH.ERASE-ETCH.REST;
+    if(t<wipeAt)advanceTo(t);
+    if(t<s.dur){setStatus('Drawing… '+Math.floor(t/s.dur*100)+'%');}
+    else if(t<wipeAt){$('placard').classList.add('on');
+      if(!s.flashed){s.flashed=true;if(t<s.dur+1){flashEl.classList.remove('on');void flashEl.offsetWidth;flashEl.classList.add('on');}}
+      setStatus('<strong>'+esc(s.title)+'</strong> · finished');
+      if(!s.pre&&t>s.dur+ETCH.HOLD){s.pre=true;setTimeout(function(){liveSlot(k+1);},30);}}
+    else if(t<s.len-ETCH.REST){$('placard').classList.remove('on');
+      if(!s.shook){s.shook=true;screenEl.classList.remove('shake');void screenEl.offsetWidth;screenEl.classList.add('shake');}
+      setStatus('Shaking clean…');
+      var kk=Math.log(22)/ETCH.ERASE;ink.globalCompositeOperation='destination-out';
+      ink.globalAlpha=1-Math.exp(-kk*dt);ink.fillStyle='#000';ink.fillRect(0,0,CW,CH);
+      ink.globalAlpha=0.22;for(var i=0;i<6;i++){ink.beginPath();ink.arc(Math.random()*CW,Math.random()*CH,30+Math.random()*90,0,TAU);ink.fill();}
+      penStyle();}
+    else{screenEl.classList.remove('shake');setStatus('Next sketch in a moment…');}
+    drawTip(s.pos);}
+  requestAnimationFrame(loop);}
+
+loadManifest().then(function(m){MANIFEST=m;requestAnimationFrame(loop);},function(){setStatus('Could not load the sketch list. Reload the page to try again.');});
+</script>
+</body>
+</html>

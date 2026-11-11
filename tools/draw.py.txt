@@ -1,0 +1,31 @@
+# Review tool for Endless Etch batches: turns <out-dir>/paths.json into PNGs.
+# Usage: python3 draw.py <out-dir> [scale]   -> <out-dir>/NN-name.png (300*scale x 200*scale) and <out-dir>/sheet-1.png, sheet-2.png ...
+# Scale 3.6 gives 1080x720 images, ready for Instagram.
+import json, sys, os, re
+from PIL import Image, ImageDraw
+out = sys.argv[1]
+data = json.load(open(os.path.join(out, 'paths.json')))
+S = float(sys.argv[2]) if len(sys.argv) > 2 else 3
+def render(item, scale):
+    im = Image.new('RGB', (round(300 * scale), round(200 * scale)), (200, 201, 195))
+    d = ImageDraw.Draw(im)
+    pts = [(x * scale, y * scale) for x, y in item['pts']]
+    d.line(pts, fill=(61, 62, 59), width=max(1, round(scale * 0.8)), joint='curve')
+    return im
+tiles = []
+for i, item in enumerate(data):
+    im = render(item, S)
+    slug = re.sub(r'[^a-z0-9]+', '-', item.get('title', item['name']).lower()).strip('-')
+    im.save(os.path.join(out, f'{i+1:02d}-{slug}.png'))
+    t = render(item, 2)
+    label = f"{i+1}. {item['title']} ({item['name']})" if 'title' in item else f"{i+1}. {item['name']}  {item['secs']:.0f}s"
+    ImageDraw.Draw(t).text((8, 6), label, fill=(30, 30, 28))
+    tiles.append(t)
+per = 6
+for s in range(0, len(tiles), per):
+    chunk = tiles[s:s + per]
+    sheet = Image.new('RGB', (600 * 2 + 10, 400 * 3 + 20), (40, 40, 38))
+    for j, t in enumerate(chunk):
+        sheet.paste(t, ((j % 2) * 610, (j // 2) * 410))
+    sheet.save(os.path.join(out, f'sheet-{s // per + 1}.png'))
+print('wrote', len(data), 'images and', (len(tiles) + per - 1) // per, 'sheets to', out)

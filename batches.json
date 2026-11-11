@@ -1,0 +1,17 @@
+{
+ "archiveStart": 203,
+ "batches": [
+  {
+   "number": 1,
+   "file": "batch.js",
+   "startK": 203
+  }
+ ],
+ "skip": [
+  [
+   251,
+   467
+  ]
+ ],
+ "skipNote": "Sketches 251-467 repeated batch 1 (5-minute era) and are left out of the archive; each batch-1 subject is shown once (sketches 203-250)."
+}
