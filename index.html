@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Endless Etch</title>
-<meta name="description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every 20 minutes.">
+<meta name="description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every five minutes, plus one 20-minute Daily Super Sketch.">
 <meta property="og:title" content="Endless Etch">
-<meta property="og:description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every 20 minutes.">
+<meta property="og:description" content="A live Etch A Sketch-style screen. Claude draws a real thing in one continuous line, a new subject every five minutes, plus one 20-minute Daily Super Sketch.">
 <meta property="og:url" content="https://endlessetch.art/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='5' width='28' height='22' rx='4' fill='%23c6c7c1'/%3E%3Cpath d='M8 21 L12 12 L16 18 L20 10 L24 21' fill='none' stroke='%233d3e3b' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,6 +26,7 @@
     <nav aria-label="Pages"><a href="./" aria-current="page">Live</a><a href="archive.html">Archive</a></nav>
   </header>
 
+  <div class="banner" id="banner" hidden><span class="star">★</span><span>Daily Super Sketch</span><small>20-minute master work · once a day</small></div>
   <div class="screen" id="screen" role="img" aria-label="Etch A Sketch style screen drawing a picture with one continuous line">
     <canvas id="bg" width="1200" height="800"></canvas>
     <canvas id="ink" width="1200" height="800"></canvas>
@@ -38,6 +39,7 @@
     <div class="left"><strong id="sk">Endless Etch</strong><span id="st">Loading…</span></div>
     <span id="live">Live</span>
   </div>
+  <p class="supernote" id="supernote" aria-live="polite"></p>
 </main>
 
 <script src="etch-core.js"></script>
@@ -56,12 +58,25 @@ function liveSlot(k){if(cache[k])return Promise.resolve(cache[k]);var e=etchEntr
   return loadBatch(e.file).then(function(B){if(cache[k])return cache[k];var s=etchSlot(B,e.startK,k),cum=new Float64Array(s.moves.length),t=0,x=HOME[0],y=HOME[1];
     for(var i=0;i<s.moves.length;i++){var m=s.moves[i];t+=Math.max(Math.abs(m.x-x),Math.abs(m.y-y))/(ETCH.V*m.m);x=m.x;y=m.y;cum[i]=t;}
     var budget=etchSlotSeconds(k)-ETCH.HOLD-ETCH.PREWIPE-ETCH.ERASE-ETCH.REST-0.5,speed=Math.max(0.4,t/budget);for(var j=0;j<cum.length;j++)cum[j]/=speed;
-    cache[k]={k:k,subj:s.subj,title:s.title,batch:B.number,moves:s.moves,cum:cum,dur:t/speed,len:etchSlotSeconds(k)};for(var key in cache)if(+key<k-1)delete cache[key];return cache[k];});}
+    cache[k]={k:k,subj:s.subj,title:s.title,master:s.master,batch:B.number,moves:s.moves,cum:cum,dur:t/speed,len:etchSlotSeconds(k)};for(var key in cache)if(+key<k-1)delete cache[key];return cache[k];});}
 
 var slot=null,loading=-1;
-function useSlot(s){slot={k:s.k,subj:s.subj,title:s.title,moves:s.moves,cum:s.cum,dur:s.dur,len:s.len,mi:0,pos:{x:HOME[0],y:HOME[1]},flashed:false,shook:false,pre:false};
-  ink.clearRect(0,0,CW,CH);penStyle();$('placard').classList.remove('on');$('ptitle').textContent=s.title;$('pmeta').textContent=tag(s.k)+' · '+s.subj.name;
-  $('sk').textContent='Sketch '+tag(s.k);}
+function useSlot(s){slot={k:s.k,subj:s.subj,title:s.title,master:s.master,moves:s.moves,cum:s.cum,dur:s.dur,len:s.len,mi:0,pos:{x:HOME[0],y:HOME[1]},flashed:false,shook:false,pre:false};
+  ink.clearRect(0,0,CW,CH);penStyle();$('placard').classList.remove('on');$('ptitle').textContent=s.title;$('pmeta').textContent=tag(s.k)+' · '+(s.master?'Daily Super Sketch · ':'')+s.subj.name;
+  $('sk').innerHTML=s.master?'<span class="super">★ Daily Super Sketch</span> '+tag(s.k):'Sketch '+tag(s.k);
+  $('banner').hidden=!s.master;screenEl.classList.toggle('super',!!s.master);superNote();}
+
+// One line under the screen: when today's (or the next) Daily Super Sketch plays.
+var noteKey='';
+function superKOfDay(d){return ETCH.ERA2.k+d*ETCH.ERA2.perDay+etchMasterPos(d);}
+function superNote(){var k=nowK(),d=k<ETCH.ERA2.k?0:etchDayPos(k).d,km=superKOfDay(d),h;
+  if(k===km&&slot&&slot.k===k&&slot.master)h='The <b>Daily Super Sketch</b> is drawing now.';
+  else{var first=k<ETCH.ERA2.k,day=k>km?d+1:d,kk=superKOfDay(day),when=new Date(etchStartMs(kk)),
+    same=new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(when)===new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(new Date());
+    var at=when.toLocaleString('en-US',same?{timeZone:TZ,hour:'numeric',minute:'2-digit'}:{timeZone:TZ,weekday:'long',hour:'numeric',minute:'2-digit'});
+    h=(first?'First ':(k>km?'Next ':'Today\u2019s '))+'<b>Daily Super Sketch</b>: '+(same?'today at ':'')+at+' PT';}
+  if(h!==noteKey){noteKey=h;$('supernote').innerHTML=h;}}
+setInterval(superNote,30000);
 
 function advanceTo(t){var s=slot,td=Math.min(t,s.dur);
   ink.beginPath();ink.moveTo(s.pos.x*SC,s.pos.y*SC);var moved=false;
@@ -81,7 +96,7 @@ function loop(now){
     liveSlot(k).then(function(s){if(nowK()===s.k)useSlot(s);loading=-1;},function(){loading=-1;setStatus('Could not load this sketch. Reload the page to try again.');});}
   if(slot&&slot.k===k){var s=slot,wipeAt=s.len-ETCH.ERASE-ETCH.REST;
     if(t<wipeAt)advanceTo(t);
-    if(t<s.dur){setStatus('Drawing… '+Math.floor(t/s.dur*100)+'%');}
+    if(t<s.dur){setStatus((s.master?'Super Sketch · drawing… ':'Drawing… ')+Math.floor(t/s.dur*100)+'%');}
     else if(t<wipeAt){$('placard').classList.add('on');
       if(!s.flashed){s.flashed=true;if(t<s.dur+1){flashEl.classList.remove('on');void flashEl.offsetWidth;flashEl.classList.add('on');}}
       setStatus('<strong>'+esc(s.title)+'</strong> · finished');

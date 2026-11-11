@@ -74,7 +74,7 @@ function renderMonths(){var box=$('months');box.innerHTML='';
     var h='<h2>'+name+'</h2><div class="cal" role="grid" aria-label="'+name+'">';['S','M','T','W','T','F','S'].forEach(function(w){h+='<span class="wd" aria-hidden="true">'+w+'</span>';});
     for(var b=0;b<first;b++)h+='<span></span>';
     for(var dd=1;dd<=n;dd++){var d=byMonth[m][dd];
-      if(d){var c=d.ks.length;h+='<a class="d" href="#'+d.key+'"'+(current===d.key?' aria-current="date"':'')+' aria-label="'+longDay(d.key)+', '+c+' sketches">'+dd+'<small>'+c+'</small></a>';}
+      if(d){var c=d.ks.length,hs=d.ks.some(etchIsMaster);h+='<a class="d'+(hs?' has-super':'')+'" href="#'+d.key+'"'+(current===d.key?' aria-current="date"':'')+' aria-label="'+longDay(d.key)+', '+c+' sketches'+(hs?', with a Daily Super Sketch':'')+'">'+dd+'<small>'+c+'</small></a>';}
       else h+='<span class="d">'+dd+'</span>';}
     sec.innerHTML=h+'</div>';box.appendChild(sec);});
   var total=DAYS.reduce(function(n,d){return n+d.ks.length;},0);$('total').textContent=total.toLocaleString('en-US')+(total===1?' sketch':' sketches');}
@@ -82,8 +82,8 @@ function renderMonths(){var box=$('months');box.innerHTML='';
 var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){io.unobserve(en.target);fill(en.target);}});},{rootMargin:'400px'}):null;
 function fill(el){var k=+el.dataset.k;Redraw.request(k,function(r){if(!r)return;var b=el.querySelector('button');paintSketch(el.querySelector('canvas'),r,330,220,false);b.classList.remove('wait');
   b.setAttribute('aria-label','Open sketch '+tag(k)+', '+r.title);el.querySelector('b').textContent=r.title;el.querySelector('.sub').textContent=tag(k)+' · '+r.name;});}
-function makeTile(k){var f=document.createElement('figure');f.className='tile';f.dataset.k=k;
-  f.innerHTML='<button type="button" class="wait" aria-label="Open sketch '+tag(k)+'"><canvas width="330" height="220"></canvas></button><figcaption><b>&nbsp;</b><span class="sub">'+tag(k)+'</span><span>'+fmtTime(k)+' PT</span></figcaption>';
+function makeTile(k){var f=document.createElement('figure'),sup=etchIsMaster(k);f.className='tile'+(sup?' super':'');f.dataset.k=k;
+  f.innerHTML='<button type="button" class="wait" aria-label="Open sketch '+tag(k)+'"><canvas width="330" height="220"></canvas></button><figcaption>'+(sup?'<span class="flag">★ Daily Super Sketch</span>':'')+'<b>&nbsp;</b><span class="sub">'+tag(k)+'</span><span>'+fmtTime(k)+' PT</span></figcaption>';
   f.querySelector('button').onclick=function(){openLightbox(k);};
   if(Redraw.get(k)||!io)fill(f);else io.observe(f);return f;}
 

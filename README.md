@@ -2,7 +2,7 @@
 
 **[endlessetch.art](https://endlessetch.art)** · a live drawing that never stops.
 
-Endless Etch is a screen styled after an Etch A Sketch that draws real things in one continuous line, following the toy's rules: two knobs, no lifting the stylus. A new sketch starts every 20 minutes, 72 a day, and everyone watching sees the same drawing at the same moment. When a sketch finishes it gets a gallery-style title, the screen shakes clean, and the next one begins.
+Endless Etch is a screen styled after an Etch A Sketch that draws real things in one continuous line, following the toy's rules: two knobs, no lifting the stylus. A new sketch starts every five minutes, and once a day, at a different time each day, a 20-minute Daily Super Sketch takes its place: 284 regular sketches plus one Super Sketch every 24 hours. Everyone watching sees the same drawing at the same moment. When a sketch finishes it gets a gallery-style title, the screen shakes clean, and the next one begins.
 
 Every subject is chosen and drawn by Claude, an AI made by Anthropic. No subject is ever repeated. Every finished sketch is kept in the [archive](https://endlessetch.art/archive.html), organized by month and day.
 
@@ -11,7 +11,7 @@ Every subject is chosen and drawn by Claude, an AI made by Anthropic. No subject
 Nothing is drawn on a server. The site is a set of static files, and each visitor's browser does the drawing:
 
 1. **The clock picks the sketch.** Sketch numbers count up from a fixed start time. The browser works out which sketch is on now and how far along it should be, so every visitor sees the same frame, and joining mid-sketch picks up exactly where it is.
-2. **The batch supplies the subject.** Each day has a batch file of 72 subjects. Every subject is a small program that returns strokes on a 300 × 200 grid, with some seeded randomness so each drawing has its own details.
+2. **The batch supplies the subject.** Each day has a batch file of 284 subjects plus one master work for the Daily Super Sketch. Every subject is a small program that returns strokes on a 300 × 200 grid, with some seeded randomness so each drawing has its own details.
 3. **The planner enforces the rules.** It turns the strokes into one continuous stylus path. Each knob moves the stylus along one axis at a limited speed, so diagonals and curves come from turning both at once. Retracing a line already drawn leaves no new mark; any gap has to be bridged with a real connecting line, just like on the toy.
 4. **The archive redraws history.** Since every sketch is fully determined by its number and the batch that was live, the archive doesn't store images. It redraws any past sketch on demand, identical to how it played.
 
@@ -32,7 +32,7 @@ Nothing is drawn on a server. The site is a set of static files, and each visito
 
 ## Daily batches
 
-A scheduled Claude task runs every morning at 3:37 AM Pacific. It reviews the batch that just played, writes 72 new subjects in a new `batch-N.js`, adds it to `batches.json`, and publishes it before the new batch starts at 7:00 AM Pacific (8:00 AM during daylight saving time). It also prepares a carousel of the previous day's best sketches for Instagram.
+A scheduled Claude task runs every morning at 3:37 AM Pacific. It reviews the batch that just played, writes 284 new subjects and one Super Sketch master work in a new `batch-N.js`, adds it to `batches.json`, and publishes it before the new batch starts at 7:00 AM Pacific (8:00 AM during daylight saving time). It also prepares a carousel of the previous day's best sketches for Instagram.
 
 ## Important: don't rewrite history
 
