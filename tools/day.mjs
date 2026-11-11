@@ -1,8 +1,8 @@
 // Redraw sketches exactly as they played on the page, for picking Instagram posts.
 // Usage: node day.mjs <site-dir> <fromK> <toK> <out-dir> [--all]
 //   <site-dir> holds etch-core.js, etch-engine.js, batches.json and the batch files it lists.
-//   Sketch numbers: use etchKAt(ms) from etch-engine.js (5-minute sketches; from sketch 468 each day also has one
-//   20-minute Daily Super Sketch, see etchIsMaster(k)). Super Sketches are always kept and their name starts with "SUPER ".
+//   Sketch numbers: use etchKAt(ms) from etch-engine.js (5-minute sketches before sketch 468; from then on 10-minute
+//   sketches, and each day also has one 20-minute Daily Super Sketch, see etchIsMaster(k)). Super Sketches are always kept and their name starts with "SUPER ".
 //   The last 24 hours: fromK = etchKAt(Date.now() - 86400000), toK = etchKAt(Date.now()) - 1.
 //   By default keeps one sketch per subject (its first play in the range); --all keeps every sketch.
 // Writes <out-dir>/paths.json (same format draw.py.txt reads, plus k and title). Then:

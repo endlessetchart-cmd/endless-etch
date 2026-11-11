@@ -66,7 +66,7 @@ function buildDays(a0,last){var out=[],cur=null;
   return out;}
 
 function renderMonths(){var box=$('months');box.innerHTML='';
-  if(!DAYS.length){box.innerHTML='<div class="empty">The first sketch appears here five minutes after it starts on the live screen.</div>';return;}
+  if(!DAYS.length){box.innerHTML='<div class="empty">The first sketch appears here once it finishes on the live screen.</div>';return;}
   var byMonth={},order=[];DAYS.forEach(function(d){var m=d.key.slice(0,7);if(!byMonth[m]){byMonth[m]={};order.push(m);}byMonth[m][+d.key.slice(8)]=d;});
   order.reverse().forEach(function(m){var y=+m.slice(0,4),mo=+m.slice(5,7),first=new Date(Date.UTC(y,mo-1,1)).getUTCDay(),n=new Date(Date.UTC(y,mo,0)).getUTCDate();
     var sec=document.createElement('div');sec.className='month';

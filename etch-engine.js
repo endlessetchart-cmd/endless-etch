@@ -4,23 +4,23 @@
 var ETCH={SLOT:300,HOLD:4,PREWIPE:2,ERASE:1.45,REST:1,EPOCH:Date.UTC(2026,10,11,0,0,0),HOME:[150,194],V:48};
 // Era 1 (sketches 0-467): plain 5-minute sketches.
 // Era 2 (from Nov 12 2026, 7:00 AM PST = 15:00 UTC, sketch 468): days of exactly 24 hours, each with
-// 284 regular 5-minute sketches plus one 20-minute master work at a fixed pseudo-random point in the day
-// (284 x 300s + 1200s = 86400s). One batch per day: 284 subjects + 1 master. Sketch numbers k run on continuously.
-ETCH.ERA2={k:468,ms:Date.UTC(2026,10,12,15,0,0),slot:300,master:1200,regular:284,perDay:285};
+// 142 regular 10-minute sketches plus one 20-minute master work at a fixed pseudo-random point in the day
+// (142 x 600s + 1200s = 86400s). One batch per day: 142 subjects + 1 master. Sketch numbers k run on continuously.
+ETCH.ERA2={k:468,ms:Date.UTC(2026,10,12,15,0,0),slot:600,master:1200,regular:142,perDay:143};
 ETCH.DAILY=ETCH.ERA2.perDay;
-ETCH.ERAS=[{k:0,ms:ETCH.EPOCH,slot:300},{k:ETCH.ERA2.k,ms:ETCH.ERA2.ms,slot:300}];
+ETCH.ERAS=[{k:0,ms:ETCH.EPOCH,slot:300},{k:ETCH.ERA2.k,ms:ETCH.ERA2.ms,slot:600}];
 
-// Era 2 day d (0 = Nov 12 2026): where in the day the master work falls, a seeded random position 12..176,
+// Era 2 day d (0 = Nov 12 2026): where in the day the master work falls, a seeded random position 6..88,
 // i.e. starting between 8:00 AM and 9:40 PM Pacific standard time (an hour later during daylight saving), so
 // people can catch it. Same for every viewer.
-function etchMasterPos(d){return 12+Math.floor(rng((Math.imul(d+1,0x2C1B3C6D)^0x6E7A57E5)>>>0)()*165);}
-// Era 2 position of sketch k: {d: day, p: 0..284 within the day, m: master position that day}.
+function etchMasterPos(d){return 6+Math.floor(rng((Math.imul(d+1,0x2C1B3C6D)^0x6E7A57E5)>>>0)()*83);}
+// Era 2 position of sketch k: {d: day, p: 0..142 within the day, m: master position that day}.
 function etchDayPos(k){var E=ETCH.ERA2,kk=k-E.k,d=Math.floor(kk/E.perDay);return {d:d,p:kk-d*E.perDay,m:etchMasterPos(d)};}
 function etchIsMaster(k){if(k<ETCH.ERA2.k)return false;var q=etchDayPos(k);return q.p===q.m;}
 
 function etchStartMs(k){var E=ETCH.ERA2;if(k<E.k)return ETCH.EPOCH+k*ETCH.SLOT*1000;
   var q=etchDayPos(k),s=q.p*E.slot+(q.p>q.m?E.master-E.slot:0);return E.ms+q.d*86400000+s*1000;}
-function etchSlotSeconds(k){return etchIsMaster(k)?ETCH.ERA2.master:ETCH.SLOT;}
+function etchSlotSeconds(k){return k<ETCH.ERA2.k?ETCH.SLOT:etchIsMaster(k)?ETCH.ERA2.master:ETCH.ERA2.slot;}
 function etchKAt(ms){var E=ETCH.ERA2;if(ms<E.ms)return Math.floor((ms-ETCH.EPOCH)/1000/ETCH.SLOT);
   var d=Math.floor((ms-E.ms)/86400000),s=(ms-E.ms-d*86400000)/1000,m=etchMasterPos(d),a=m*E.slot,p;
   if(s<a)p=Math.floor(s/E.slot);else if(s<a+E.master)p=m;else p=m+1+Math.floor((s-a-E.master)/E.slot);
