@@ -36,7 +36,7 @@
   </div>
 
   <div class="status" aria-live="polite">
-    <div class="left"><strong id="sk">Endless Etch</strong><span id="st">Loading…</span></div>
+    <div class="left"><strong id="sk" hidden></strong><span id="st">Loading…</span></div>
     <span id="live">Live</span>
   </div>
   <p class="supernote" id="supernote" aria-live="polite"></p>
@@ -62,8 +62,8 @@ function liveSlot(k){if(cache[k])return Promise.resolve(cache[k]);var e=etchEntr
 
 var slot=null,loading=-1;
 function useSlot(s){slot={k:s.k,subj:s.subj,title:s.title,master:s.master,moves:s.moves,cum:s.cum,dur:s.dur,len:s.len,mi:0,pos:{x:HOME[0],y:HOME[1]},flashed:false,shook:false,pre:false};
-  ink.clearRect(0,0,CW,CH);penStyle();$('placard').classList.remove('on');$('ptitle').textContent=s.title;$('pmeta').textContent=tag(s.k)+' · '+(s.master?'Daily Super Sketch · ':'')+s.subj.name;
-  $('sk').innerHTML=s.master?'<span class="super">★ Daily Super Sketch</span> '+tag(s.k):'Sketch '+tag(s.k);
+  ink.clearRect(0,0,CW,CH);penStyle();$('placard').classList.remove('on');$('ptitle').textContent=s.title;$('pmeta').textContent=(s.master?'Daily Super Sketch · ':'')+s.subj.name;
+  $('sk').innerHTML=s.master?'<span class="super">★ Daily Super Sketch</span>':'';$('sk').hidden=!s.master;
   $('banner').hidden=!s.master;screenEl.classList.toggle('super',!!s.master);superNote();}
 
 // One line under the screen: when today's (or the next) Daily Super Sketch plays.
