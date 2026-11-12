@@ -59,8 +59,9 @@ function dayOf(k){return dayFmt.format(kDate(k));}
 function longDay(key){var p=key.split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).toLocaleDateString('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric',year:'numeric'});}
 
 // Group the archive's sketch numbers [a0, last] into Pacific-time days: [{key:'YYYY-MM-DD', ks:[k...]}], oldest first.
-// Ranges listed in batches.json "skip" (repeats from the 5-minute era) are left out.
-function hidden(k){var sk=MANIFEST.skip||[];for(var i=0;i<sk.length;i++)if(k>=sk[i][0]&&k<=sk[i][1])return true;return false;}
+// Ranges listed in batches.json "skip" (repeats from the 5-minute era) are left out, and from Nov 13 2026 on
+// each batch's repeat plays are too, so every subject appears once.
+function hidden(k){var sk=MANIFEST.skip||[];for(var i=0;i<sk.length;i++)if(k>=sk[i][0]&&k<=sk[i][1])return true;return etchIsRepeat(MANIFEST,k);}
 function buildDays(a0,last){var out=[],cur=null;
   for(var k=a0;k<=last;k++){if(hidden(k))continue;var d=dayOf(k);if(!cur||cur.key!==d){cur={key:d,ks:[]};out.push(cur);}cur.ks.push(k);}
   return out;}

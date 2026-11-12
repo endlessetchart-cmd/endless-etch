@@ -7,8 +7,12 @@ var ETCH={SLOT:300,HOLD:4,PREWIPE:2,ERASE:1.45,REST:1,EPOCH:Date.UTC(2026,10,11,
 // 142 regular 10-minute sketches plus one 20-minute master work at a fixed pseudo-random point in the day
 // (142 x 600s + 1200s = 86400s). One batch per day: 142 subjects + 1 master. Sketch numbers k run on continuously.
 ETCH.ERA2={k:468,ms:Date.UTC(2026,10,12,15,0,0),slot:600,master:1200,regular:142,perDay:143};
-ETCH.DAILY=ETCH.ERA2.perDay;
-ETCH.ERAS=[{k:0,ms:ETCH.EPOCH,slot:300},{k:ETCH.ERA2.k,ms:ETCH.ERA2.ms,slot:600}];
+// Era 3 (from Nov 13 2026, 7:00 AM PST = 15:00 UTC, sketch 611; era 2 ran for exactly one day): plain 10-minute
+// sketches, 144 a day, no master work. Each daily batch has 48 subjects that repeat (3 plays each, shuffled per round).
+// The archive shows each subject once per batch (etchIsRepeat).
+ETCH.ERA3={k:611,ms:Date.UTC(2026,10,13,15,0,0),slot:600,perDay:144,fresh:48};
+ETCH.DAILY=ETCH.ERA3.perDay;
+ETCH.ERAS=[{k:0,ms:ETCH.EPOCH,slot:300},{k:ETCH.ERA2.k,ms:ETCH.ERA2.ms,slot:600},{k:ETCH.ERA3.k,ms:ETCH.ERA3.ms,slot:600}];
 
 // Era 2 day d (0 = Nov 12 2026): where in the day the master work falls, a seeded random position 6..88,
 // i.e. starting between 8:00 AM and 9:40 PM Pacific standard time (an hour later during daylight saving), so
@@ -16,24 +20,31 @@ ETCH.ERAS=[{k:0,ms:ETCH.EPOCH,slot:300},{k:ETCH.ERA2.k,ms:ETCH.ERA2.ms,slot:600}
 function etchMasterPos(d){return 6+Math.floor(rng((Math.imul(d+1,0x2C1B3C6D)^0x6E7A57E5)>>>0)()*83);}
 // Era 2 position of sketch k: {d: day, p: 0..142 within the day, m: master position that day}.
 function etchDayPos(k){var E=ETCH.ERA2,kk=k-E.k,d=Math.floor(kk/E.perDay);return {d:d,p:kk-d*E.perDay,m:etchMasterPos(d)};}
-function etchIsMaster(k){if(k<ETCH.ERA2.k)return false;var q=etchDayPos(k);return q.p===q.m;}
+function etchIsMaster(k){if(k<ETCH.ERA2.k||k>=ETCH.ERA3.k)return false;var q=etchDayPos(k);return q.p===q.m;}
 
-function etchStartMs(k){var E=ETCH.ERA2;if(k<E.k)return ETCH.EPOCH+k*ETCH.SLOT*1000;
+function etchStartMs(k){var E=ETCH.ERA2,E3=ETCH.ERA3;if(k<E.k)return ETCH.EPOCH+k*ETCH.SLOT*1000;if(k>=E3.k)return E3.ms+(k-E3.k)*E3.slot*1000;
   var q=etchDayPos(k),s=q.p*E.slot+(q.p>q.m?E.master-E.slot:0);return E.ms+q.d*86400000+s*1000;}
 function etchSlotSeconds(k){return k<ETCH.ERA2.k?ETCH.SLOT:etchIsMaster(k)?ETCH.ERA2.master:ETCH.ERA2.slot;}
-function etchKAt(ms){var E=ETCH.ERA2;if(ms<E.ms)return Math.floor((ms-ETCH.EPOCH)/1000/ETCH.SLOT);
+function etchKAt(ms){var E=ETCH.ERA2,E3=ETCH.ERA3;if(ms<E.ms)return Math.floor((ms-ETCH.EPOCH)/1000/ETCH.SLOT);if(ms>=E3.ms)return E3.k+Math.floor((ms-E3.ms)/1000/E3.slot);
   var d=Math.floor((ms-E.ms)/86400000),s=(ms-E.ms-d*86400000)/1000,m=etchMasterPos(d),a=m*E.slot,p;
   if(s<a)p=Math.floor(s/E.slot);else if(s<a+E.master)p=m;else p=m+1+Math.floor((s-a-E.master)/E.slot);
   return E.k+d*E.perDay+p;}
 // Kept for older code: the era whose rules apply to sketch k / time ms.
-function etchEraForK(k){return k<ETCH.ERA2.k?ETCH.ERAS[0]:ETCH.ERAS[1];}
-function etchEraForMs(ms){return ms<ETCH.ERA2.ms?ETCH.ERAS[0]:ETCH.ERAS[1];}
+function etchEraForK(k){return k<ETCH.ERA2.k?ETCH.ERAS[0]:k<ETCH.ERA3.k?ETCH.ERAS[1]:ETCH.ERAS[2];}
+function etchEraForMs(ms){return ms<ETCH.ERA2.ms?ETCH.ERAS[0]:ms<ETCH.ERA3.ms?ETCH.ERAS[1]:ETCH.ERAS[2];}
 // Batch N (N >= 2) starts at the first sketch of its day, so each daily batch fills exactly one day.
-function etchBatchStartK(n){return ETCH.ERA2.k+(n-2)*ETCH.ERA2.perDay;}
+// Batch 2 = sketch 468 (the one era-2 day); batch 3 = sketch 611; then one batch per 144 sketches.
+function etchBatchStartK(n){return n<=2?ETCH.ERA2.k+(n-2)*ETCH.ERA2.perDay:ETCH.ERA3.k+(n-3)*ETCH.ERA3.perDay;}
 
 // Regular-sketch counter: equals k before era 2; from era 2 on it skips master works, so regular
 // subjects are dealt out in order without a gap. (For a master k it returns the next regular sketch's value.)
-function etchRegCount(k){var E=ETCH.ERA2;if(k<E.k)return k;var q=etchDayPos(k);return E.k+q.d*E.regular+q.p-(q.p>q.m?1:0);}
+function etchRegCount(k){var E=ETCH.ERA2,E3=ETCH.ERA3;if(k<E.k)return k;if(k>=E3.k)return E.k+E.regular+(k-E3.k);var q=etchDayPos(k);return E.k+q.d*E.regular+q.p-(q.p>q.m?1:0);}
+
+// Archive helper: true when sketch k is a repeat play of its batch's subjects (era 3 on), so the archive can
+// show each subject once. A batch entry may give "count" (its number of subjects); otherwise ERA3.fresh.
+// A batch that started before era 3 has already played all its subjects, so its era-3 plays are repeats.
+function etchIsRepeat(manifest,k){var E3=ETCH.ERA3;if(k<E3.k)return false;var e=etchEntryFor(manifest,k);
+  if(e.startK<E3.k)return true;return etchRegCount(k)-etchRegCount(e.startK)>=(e.count||E3.fresh);}
 
 // Which batch was live for sketch k. manifest = {archiveStart, batches:[{number,file,startK}]} (sorted by startK).
 function etchEntryFor(manifest,k){var b=manifest.batches,e=b[0];for(var i=0;i<b.length;i++)if(b[i].startK<=k)e=b[i];return e;}
