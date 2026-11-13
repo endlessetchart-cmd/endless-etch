@@ -834,5 +834,84 @@ SUBJ.push(
   skyFill(s,y,RR(R,8,11),RR(R,4.6,5.2),5,[CAB,PF]);return s;}}
 );
 
-return {number:3,startedOn:"2026-11-13",notes:"Batch 3 (Nov 13): first 48-subject day, each played 3x. Review of batch 2: best were structures and machines - bell tower, rope bridge, container ship, carousel, windpump, chalet, lookout tower, trawler, grand piano, greenhouse; pufferfish and whale read well too. Weak: giraffe, oil pumpjack, rail handcar, rooster, swan, seahorse (muddled shapes); skillet, microscope, bread loaf drowned in tile/grid backgrounds; rice terraces too busy. Timing was right (300-570s). Lessons kept: one line, keep extras touching; clip backgrounds with behind()/clipIn(); skyFill with solids; strokes under ~250 and planner under 2s; full-width lines block skyFill's flood, so keep shelves/rails short of the edges. New: animals need a careful outline (12-20 blob points with the real silhouette, head and legs drawn as their own shapes) and the open space under a body must be filled or it reads as a solid block; skip grid backgrounds behind tabletop objects; many small closed shapes (circles) slow the planner sharply.",subjects:SUBJ};
+// ---- Daily Super Sketch (20 minutes) ----
+var MASTER={name:'Town square with a fountain',titles:['Noon in the Square','Where the Water Talks','Market Day, After','The Fountain Keeps Time','Pigeons and Stone'],build(R){
+  var s=[],GY=RR(R,124,130),fx=RR(R,134,166),solid=[],fh=[];
+  // ---- fountain geometry ----
+  var by=RR(R,177,181),brx=RR(R,56,62),bry=brx*0.22,top=by-14;
+  var basinSil=[[fx-brx,top]].concat(arc(fx,top,brx,bry,PI,TAU)).concat(arc(fx,by,brx,bry,0,PI));
+  var ty=by-RR(R,50,56),ubrx=RR(R,24,28),ubry=ubrx*0.25,cw=6;
+  var colSil=[[fx-cw,top],[fx-cw,ty+8],[fx+cw,ty+8],[fx+cw,top]];
+  var ubBody=arc(fx,ty,ubrx,ubry,PI,0).concat(quad([fx+ubrx,ty],[fx+ubrx*0.5,ty+13],[fx,ty+13],10)).concat(quad([fx,ty+13],[fx-ubrx*0.5,ty+13],[fx-ubrx,ty],10));
+  var ubSil=arc(fx,ty,ubrx,ubry,PI,TAU).concat(ubBody.slice(1));
+  var t2=ty-RR(R,20,24),sbrx=10;
+  var col2=[[fx-3,ty-ubry+1],[fx-3,t2+5],[fx+3,t2+5],[fx+3,ty-ubry+1]];
+  var sbBody=arc(fx,t2,sbrx,2.5,PI,0).concat(quad([fx+sbrx,t2],[fx+5,t2+7],[fx,t2+7],8)).concat(quad([fx,t2+7],[fx-5,t2+7],[fx-sbrx,t2],8));
+  var sbSil=arc(fx,t2,sbrx,2.5,PI,TAU).concat(sbBody.slice(1));
+  var fin=[[fx-2,t2-2],[fx-2,t2-7],[fx,t2-12],[fx+2,t2-7],[fx+2,t2-2]];
+  fh.push(basinSil,colSil,ubSil,col2,sbSil,[[fx-3,t2],[fx-3,t2-13],[fx+3,t2-13],[fx+3,t2]]);
+  // water veils falling from the bowls (the space they cover counts as fountain)
+  var spr=RR(R,14,18);fh.push([[fx-ubrx,ty],[fx-ubrx-spr-4,ty+8],[fx-ubrx-spr-2,top+bry],[fx+ubrx+spr+2,top+bry],[fx+ubrx+spr+4,ty+8],[fx+ubrx,ty]]);
+  // ---- back row of houses and the town hall tower ----
+  var side=fx<150?1:-1,tx=fx+side*RR(R,62,76),yT=RR(R,42,48),bg=[],houses=[];
+  var tw0=tx-13,tw1=tx+13,tower=[[tw0,GY],[tw0,yT],[tw0-3,yT],[tx,yT-28],[tw1+3,yT],[tw1,yT],[tw1,GY]];solid.push(tower);
+  bg.push([[tw0,GY],[tw0,yT],[tw1,yT],[tw1,GY]]);var troof=[[tw0-3,yT],[tx,yT-28],[tw1+3,yT]];bg.push(poly(troof));A(bg,hatch(troof,1.6,0));bg.push([[tx,yT-28],[tx,yT-34]]);bg.push([[tx-3,yT-31],[tx+3,yT-31]]);
+  var cy=yT+14;bg.push(circle(tx,cy,8.5));bg.push(circle(tx,cy,7));var hr=RR(R,0,TAU),mn=RR(R,0,TAU);
+  for(var t=0;t<12;t++){var a=t*TAU/12;bg.push([[tx+7*Math.cos(a),cy+7*Math.sin(a)],[tx+5.4*Math.cos(a),cy+5.4*Math.sin(a)]]);}
+  bg.push([[tx+4*Math.cos(hr),cy+4*Math.sin(hr)],[tx,cy],[tx+6*Math.cos(mn),cy+6*Math.sin(mn)]]);
+  bg.push(rect(tw0-1,yT+26,tw1+1,yT+29));
+  for(var b=-1;b<=1;b+=2){var ap=archP(tx+b*6,yT+46,3.5,8);bg.push(ap);A(bg,hatch(ap,1.2,0));}
+  bg.push(rect(tw0-1,yT+50,tw1+1,yT+53));A(bg,hatch([[tx+4,yT+53],[tw1,yT+53],[tw1,GY],[tx+4,GY]],2.2,90));
+  var dr=archP(tx,GY,5,8);bg.push(dr);
+  var x=4,hi=0;while(x<292){var w=RR(R,30,44);if(x<tw0&&x+w>tw0-3)w=tw0-x;if(x>=tw0-1&&x<tw1){x=tw1;continue;}if(x+w>296-14)w=296-x;if(w<14){x+=w;continue;}
+    var h=RR(R,48,80),tp=GY-h,st=hi%3,cxh=x+w/2,sil;
+    if(st===0){var rh=RR(R,14,20);sil=[[x,GY],[x,tp],[cxh,tp-rh],[x+w,tp],[x+w,GY]];bg.push(sil.slice(0));var rf=[[x,tp],[cxh,tp-rh],[x+w,tp]];A(bg,hatch(rf,2,RR(R,40,60)*(hi%2?1:-1)));bg.push([[x,tp],[x+w,tp]]);}
+    else if(st===1){var sp=w/6;
+      sil=[[x,GY],[x,tp],[x+sp,tp],[x+sp,tp-6],[x+2*sp,tp-6],[x+2*sp,tp-12],[x+4*sp,tp-12],[x+4*sp,tp-6],[x+5*sp,tp-6],[x+5*sp,tp],[x+w,tp],[x+w,GY]];bg.push(sil.slice(0));bg.push(circle(cxh,tp-4,2.5));}
+    else{sil=[[x,GY],[x,tp-4],[x+w,tp-4],[x+w,GY]];bg.push(sil.slice(0));bg.push(merlons(x,x+w,tp+2,3,6));}
+    solid.push(sil);houses.push({x0:x,x1:x+w,tp:tp});
+    // facade texture
+    var tex=hi%4;if(tex===1)bg.push(brickS(x,GY-26,x+w,GY,9,4.4));else if(tex===3)A(bg,hatch([[x,tp],[x+w,tp],[x+w,GY-26],[x,GY-26]],3.4,90));
+    // windows with mullions
+    var nc=Math.max(1,Math.floor(w/13)),wy=tp+7;while(wy+10<GY-28){var wr=[[x+1,wy+10]];for(var c=0;c<nc;c++){var wx=x+w*(c+0.5)/nc-3;wr.push([wx-1,wy+10],[wx,wy+9],[wx,wy],[wx+6,wy],[wx+6,wy+9],[wx+3,wy+9],[wx+3,wy],[wx+3,wy+4.5],[wx,wy+4.5],[wx+6,wy+4.5],[wx+6,wy+9],[wx+7,wy+10]);}wr.push([x+w-1,wy+10]);bg.push(wr);wy+=15;}
+    // ground floor: shop with a striped awning, or a door and two windows
+    if(R()<0.5){var aw=[[x+2,GY-24],[x+w-2,GY-24],[x+w+1,GY-17],[x-1,GY-17]];bg.push(poly(aw));A(bg,hatch(aw,2.4,90));bg.push(scallopRows(x-1,x+w+1,GY-17,GY-17,Math.max(5,(w+2)/Math.round((w+2)/6)),2));
+      bg.push(rect(x+4,GY-14,x+w-4,GY));bg.push([[cxh,GY-14],[cxh,GY]]);}
+    else{bg.push(rect(cxh-4,GY-15,cxh+4,GY));bg.push(rect(x+4,GY-14,x+11,GY-6));bg.push(rect(x+w-11,GY-14,x+w-4,GY-6));}
+    x+=w;hi++;}
+  // ---- lamp posts in the square ----
+  var lamps=[],lh=[];[RR(R,22,40),RR(R,260,278)].forEach(function(lx){var ly=RR(R,184,190);
+    var L=[[[lx-4,ly],[lx-4,ly-6],[lx+4,ly-6],[lx+4,ly],[lx-4,ly]],[[lx-1.5,ly-6],[lx-1.5,ly-62],[lx+1.5,ly-62],[lx+1.5,ly-6]],poly([[lx-6,ly-62],[lx+6,ly-62],[lx+8,ly-76],[lx-8,ly-76]]),[[lx,ly-62],[lx,ly-76]]];
+    var cap=[[lx-9,ly-76],[lx,ly-84],[lx+9,ly-76]];L.push(poly(cap));A(L,hatch(cap,1.3,0));L.push([[lx-5,ly-50],[lx+5,ly-50]]);A(lamps,L);
+    lh.push([[lx-5,ly+1],[lx-5,ly-7],[lx-2.5,ly-7],[lx-2.5,ly-61],[lx-9.5,ly-61],[lx-9.5,ly-77],[lx,ly-85],[lx+9.5,ly-77],[lx+9.5,ly-61],[lx+2.5,ly-61],[lx+2.5,ly-7],[lx+5,ly-7],[lx+5,ly+1]]);});
+  var front=fh.concat(lh);
+  behind(s,bg,front);
+  // ---- cobbled square in perspective ----
+  s.push([[4,GY],[296,GY]]);var cob=[],n=RI(R,10,12),prev=GY,cs=RR(R,0.9,1.1);
+  for(var r=1;r<=n;r++){var y=GY+(196-GY)*Math.pow(r/n,1.35),hh=y-prev,step=(7+13*r/n)*cs,off=(r%2)*step/2,p=[[4,y]];for(var xx=4+off+step;xx<296;xx+=step)p.push([xx,y],[xx,y-hh],[xx,y]);p.push([296,y]);cob.push(p);prev=y;}
+  // the fountain's shadow on the cobbles (right side)
+  var sh=arc(fx+8,by+3,brx+4,bry+5,-0.2,PI*0.55).concat(arc(fx,by,brx,bry,PI*0.55,-0.2));A(cob,hatch(sh,1.6,-35));
+  behind(s,cob,front);
+  A(s,lamps);
+  // ---- the fountain itself ----
+  s.push(poly(basinSil));s.push(arc(fx,top,brx,bry,0,PI));s.push(arc(fx,top+7,brx,bry,0,PI));
+  for(var i=1;i<10;i++){var a2=i*PI/10,sx=fx+brx*Math.cos(a2),y0=(i%2?top:top+7)+bry*Math.sin(a2);s.push([[sx,y0],[sx,y0+7]]);}
+  H(s,arc(fx,top,brx,bry,0,0.85).concat(arc(fx,by,brx,bry,0.85,0)),1.5,90);
+  HX(s,[EP(fx,top,brx-4,bry-1.4),[[fx-cw-1,top+2],[fx-cw-1,top-12],[fx+cw+1,top-12],[fx+cw+1,top+2]]],2.3,0);
+  s.push(poly(colSil));H(s,[[fx+2,top],[fx+2,ty+8],[fx+cw,ty+8],[fx+cw,top]],1.8,90);s.push(rect(fx-cw-2,ty+8,fx+cw+2,ty+12));
+  for(var rg=0;rg<3;rg++){var yy=top-8-rg*((top-ty-20)/3);s.push([[fx-cw,yy],[fx+cw,yy]]);}
+  s.push(poly(ubSil));s.push(arc(fx,ty,ubrx,ubry,0,PI));H(s,ubBody,2.8,0);H(s,EP(fx,ty,ubrx-2.5,ubry-1),2,0);
+  s.push(poly(col2));s.push(poly(sbSil));s.push(arc(fx,t2,sbrx,2.5,0,PI));H(s,sbBody,2.2,0);s.push(poly(fin));
+  // water: a spout from the top, veils from each bowl, ripples in the basin
+  for(var d=-1;d<=1;d+=2){s.push(quad([fx,t2-12],[fx+d*7,t2-20],[fx+d*sbrx*0.9,t2-1],10));
+    for(var v=0;v<3;v++)s.push(quad([fx+d*(sbrx-1),t2+0.5],[fx+d*(sbrx+4+v*2),t2+3],[fx+d*(sbrx+5+v*3),ty-ubry*0.4],10));
+    for(var v2=0;v2<4;v2++){var e=fx+d*(ubrx+spr-4+v2*2.4);s.push(quad([fx+d*(ubrx-1),ty+0.5],[fx+d*(ubrx+6+v2*4),ty+4],[e,top+bry*0.2+v2*0.8],14));}}
+  for(var rp=0;rp<3;rp++)s.push(arc(fx+(rp-1)*RR(R,16,22),top+bry*0.3,RR(R,5,8),1.2,0,TAU));
+  // pigeons on the rim
+  var np=RI(R,2,3);for(var pg=0;pg<np;pg++){var a3=PI*(0.18+0.64*(pg+0.5)/np)+RR(R,-0.06,0.06),px=fx+brx*Math.cos(a3),py=top+bry*Math.sin(a3);perched(s,px,py,3.4,pg%2?1:-1);}
+  // ---- sky ----
+  skyFill(s,GY,RR(R,7,8),RR(R,4.4,5),5,solid.concat(fh));
+  return s;}};
+
+return {number:3,startedOn:"2026-11-13",notes:"Batch 3 (Nov 13): first 48-subject day, each played 3x. Review of batch 2: best were structures and machines - bell tower, rope bridge, container ship, carousel, windpump, chalet, lookout tower, trawler, grand piano, greenhouse; pufferfish and whale read well too. Weak: giraffe, oil pumpjack, rail handcar, rooster, swan, seahorse (muddled shapes); skillet, microscope, bread loaf drowned in tile/grid backgrounds; rice terraces too busy. Timing was right (300-570s). Lessons kept: one line, keep extras touching; clip backgrounds with behind()/clipIn(); skyFill with solids; strokes under ~250 and planner under 2s; full-width lines block skyFill's flood, so keep shelves/rails short of the edges. New: animals need a careful outline (12-20 blob points with the real silhouette, head and legs drawn as their own shapes) and the open space under a body must be filled or it reads as a solid block; skip grid backgrounds behind tabletop objects; many small closed shapes (circles) slow the planner sharply. Daily Super Sketch (20 min, added the night before): Town square with a fountain.",master:MASTER,subjects:SUBJ};
 })();

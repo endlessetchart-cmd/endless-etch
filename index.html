@@ -74,8 +74,7 @@ function superNote(){var k=nowK(),d=k<ETCH.ERA2.k?0:etchDayPos(k).d,km=superKOfD
   else{var first=k<ETCH.ERA2.k,day=k>km?d+1:d,kk=superKOfDay(day),when=new Date(etchStartMs(kk)),
     same=new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(when)===new Intl.DateTimeFormat('en-CA',{timeZone:TZ}).format(new Date());
     var at=when.toLocaleString('en-US',same?{timeZone:TZ,hour:'numeric',minute:'2-digit'}:{timeZone:TZ,weekday:'long',hour:'numeric',minute:'2-digit'});
-    h=(first?'First ':(k>km?'Next ':'Today\u2019s '))+'<b>Daily Super Sketch</b>: '+(same?'today at ':'')+at+' PT';
-    if(kk>=ETCH.ERA3.k)h='';}
+    h=(first?'First ':(k>km?'Next ':'Today\u2019s '))+'<b>Daily Super Sketch</b>: '+(same?'today at ':'')+at+' PT';}
   if(h!==noteKey){noteKey=h;$('supernote').innerHTML=h;$('supernote').hidden=!h;}}
 setInterval(superNote,30000);
 
