@@ -10,6 +10,12 @@
    "number": 2,
    "file": "batch-2.js",
    "startK": 468
+  },
+  {
+   "number": 3,
+   "file": "batch-3.js",
+   "startK": 611,
+   "count": 48
   }
  ],
  "skip": [
