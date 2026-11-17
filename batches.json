@@ -28,6 +28,24 @@
    "file": "batch-5.js",
    "startK": 897,
    "count": 48
+  },
+  {
+   "number": 6,
+   "file": "batch-6.js",
+   "startK": 1040,
+   "count": 48
+  },
+  {
+   "number": 7,
+   "file": "batch-7.js",
+   "startK": 1183,
+   "count": 48
+  },
+  {
+   "number": 8,
+   "file": "batch-8.js",
+   "startK": 1326,
+   "count": 48
   }
  ],
  "skip": [
